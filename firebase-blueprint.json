@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Place": {
+      "title": "Place",
+      "description": "Tempat Penyelenggara Qurban",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "passcode": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "passcode", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Pengurus yang mewakili tempat penyelenggaraan",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "placeId": { "type": "string" },
+        "placeName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "name", "placeId", "placeName", "createdAt"]
+    },
+    "Qurban": {
+      "title": "Qurban Animal",
+      "description": "Data hewan qurban yang masuk ke sistem",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "placeId": { "type": "string" },
+        "animalType": { "type": "string", "enum": ["sapi", "kambing", "domba"] },
+        "animalNumber": { "type": "string" },
+        "sequenceNumber": { "type": "integer" },
+        "owners": { "type": "array" },
+        "slaughtered": { "type": "boolean" },
+        "slaughteredAt": { "type": "string", "format": "date-time" },
+        "weight": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "placeId", "animalType", "animalNumber", "sequenceNumber", "owners", "slaughtered", "createdAt", "createdBy"]
+    }
+  },
+  "firestore": {
+    "/places/{placeId}": {
+      "schema": "Place",
+      "description": "Tempat penyelenggaraan qurban"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Data akun pengurus"
+    },
+    "/qurbans/{qurbanId}": {
+      "schema": "Qurban",
+      "description": "Daftar hewan qurban"
+    }
+  }
+}

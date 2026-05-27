@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Informasi Qurban",
+  "description": "Sistem manajemen dan pelaporan data hewan qurban untuk masjid dan yayasan penyelenggara qurban dengan fitur multi-organisasi, penomoran hewan otomatis, dan pelacakan status penyembelihan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

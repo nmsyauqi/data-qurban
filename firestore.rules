@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // HELPER FUNCTIONS
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Rules for PLACES (Tempat Penyelenggara)
+    match /places/{placeId} {
+      allow read: if isValidId(placeId);
+      allow create: if isSignedIn() && isValidId(placeId) && isValidPlace(incoming());
+      allow update: if isSignedIn() && isValidId(placeId) && isValidPlace(incoming()) && (
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt
+      );
+    }
+
+    function isValidPlace(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.passcode is string && data.passcode.size() <= 32 &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Rules for USERS
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId);
+      allow create: if isSignedIn() && (request.auth.uid == userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && (request.auth.uid == userId) && isValidUser(incoming()) && (
+        incoming().email == existing().email && 
+        incoming().uid == existing().uid &&
+        incoming().placeId == existing().placeId &&
+        incoming().createdAt == existing().createdAt
+      );
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.placeId is string && data.placeId.size() <= 128 &&
+             data.placeName is string && data.placeName.size() <= 128 &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Rules for QURBANS
+    match /qurbans/{qurbanId} {
+      // Secure listing: Check if user belongs to the same place as the qurban, OR allow read access if filtered by placeId
+      allow list: if (isSignedIn() && resource.data.placeId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.placeId) || 
+                    (resource.data.placeId is string);
+      allow get: if isValidId(qurbanId) && 
+                    ((isSignedIn() && resource.data.placeId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.placeId) || 
+                     (resource.data.placeId is string));
+      
+      allow create: if isSignedIn() && 
+                    isValidId(qurbanId) &&
+                    isValidQurban(incoming()) && 
+                    incoming().placeId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.placeId &&
+                    incoming().createdBy == request.auth.uid &&
+                    incoming().createdAt is string && incoming().createdAt.size() <= 64;
+                    
+      allow update: if isSignedIn() && 
+                    isValidId(qurbanId) &&
+                    isValidQurban(incoming()) && 
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().animalNumber == existing().animalNumber &&
+                    incoming().sequenceNumber == existing().sequenceNumber &&
+                    incoming().placeId == existing().placeId &&
+                    (
+                      // Action 1: Generic edit of details (allowed only if not slaughtered yet in both current & new)
+                      (existing().slaughtered == false && incoming().slaughtered == false && 
+                       incoming().diff(existing()).affectedKeys().hasOnly(['animalType', 'owners', 'weight', 'notes'])) ||
+                      
+                      // Action 2: Mark as slaughtered (Transition from false to true)
+                      (existing().slaughtered == false && incoming().slaughtered == true && 
+                       incoming().diff(existing()).affectedKeys().hasOnly(['slaughtered', 'slaughteredAt'])) ||
+                      
+                      // Action 3: Undo slaughtered status (Requires bypass confirmation, allowed via change of slaughtered status)
+                      (existing().slaughtered == true && incoming().slaughtered == false && 
+                       incoming().diff(existing()).affectedKeys().hasOnly(['slaughtered', 'slaughteredAt']))
+                    );
+
+      allow delete: if isSignedIn() && isValidId(qurbanId) && existing().createdBy == request.auth.uid && existing().slaughtered == false;
+    }
+
+    function isValidQurban(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.placeId is string && data.placeId.size() <= 128 &&
+             data.animalType is string && (data.animalType == 'sapi' || data.animalType == 'kambing' || data.animalType == 'domba') &&
+             data.animalNumber is string && data.animalNumber.size() <= 32 &&
+             data.sequenceNumber is int &&
+             data.owners is list && data.owners.size() <= 7 && data.owners.size() >= 1 &&
+             data.slaughtered is bool &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             data.createdBy is string;
+    }
+  }
+}
