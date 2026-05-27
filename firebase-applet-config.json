@@ -3,7 +3,7 @@
   "appId": "1:1014444762451:web:77e109d0a27d1bc18beda6",
   "apiKey": "AIzaSyC5FDlddqV-vU3CzxGg8mtYfDshVvKMZTg",
   "authDomain": "data-qurban-5c772.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-f7f9f337-41ed-4978-848a-412b5aa78a8f",
+  "firestoreDatabaseId": "(default)",
   "storageBucket": "data-qurban-5c772.firebasestorage.app",
   "messagingSenderId": "1014444762451",
   "measurementId": ""
